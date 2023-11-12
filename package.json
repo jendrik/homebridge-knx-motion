@@ -1,7 +1,7 @@
 {
   "displayName": "KNX Motion",
   "name": "@jendrik/homebridge-knx-motion",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Homebridge plugin for KNX Motion Sensors",
   "license": "Apache-2.0",
   "repository": {
