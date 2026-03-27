@@ -1,4 +1,6 @@
-/* eslint @typescript-eslint/no-var-requires: "off" */
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 const { displayName, version } = require('../package.json');
 
 /**
@@ -10,5 +12,5 @@ export const PLATFORM_NAME = 'knx-motion';
  * This must match the name of your plugin as defined the package.json
  */
 export const PLUGIN_NAME = 'homebridge-' + PLATFORM_NAME;
-export const PLUGIN_DISPLAY_NAME = displayName;
-export const PLUGIN_VERSION = version;
+export const PLUGIN_DISPLAY_NAME: string = displayName;
+export const PLUGIN_VERSION: string = version;

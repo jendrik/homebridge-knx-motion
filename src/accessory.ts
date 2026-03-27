@@ -1,12 +1,10 @@
-import { AccessoryConfig, AccessoryPlugin, Service } from 'homebridge';
+import type { AccessoryConfig, AccessoryPlugin, Service } from 'homebridge';
 
 import { Datapoint } from 'knx';
 import fakegato from 'fakegato-history';
 
-import { PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_DISPLAY_NAME } from './settings';
-
-import { MotionPlatform } from './platform';
-
+import { PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_DISPLAY_NAME } from './settings.js';
+import type { MotionPlatform } from './platform.js';
 
 export class MotionAccessory implements AccessoryPlugin {
   private readonly uuid_base: string;
@@ -22,55 +20,14 @@ export class MotionAccessory implements AccessoryPlugin {
     private readonly platform: MotionPlatform,
     private readonly config: AccessoryConfig,
   ) {
-
-    // class EveMotionSensitivity extends platform.Characteristic {
-    //   public static readonly UUID: string = 'E863F120-079E-48FF-8F27-9C2605A29F52';
-
-    //   public static readonly HIGH = 0;
-    //   public static readonly MEDIUM = 4;
-    //   public static readonly LOW = 7;
-
-    //   constructor() {
-    //     super('Sensitivity', EveMotionSensitivity.UUID, {
-    //       format: platform.Characteristic.Formats.UINT8,
-    //       minValue: 0,
-    //       maxValue: 7,
-    //       validValues: [0, 4, 7],
-    //       perms: [platform.Characteristic.Perms.READ, platform.Characteristic.Perms.NOTIFY],
-    //     });
-    //     this.value = this.getDefaultValue();
-    //   }
-    // }
-
-    // // unused for now
-    // class EveMotionDuration extends platform.Characteristic {
-    //   public static readonly UUID: string = 'E863F12D-079E-48FF-8F27-9C2605A29F52';
-
-    //   constructor() {
-    //     super('Duration', EveMotionDuration.UUID, {
-    //       format: platform.Characteristic.Formats.UINT16,
-    //       unit: platform.Characteristic.Units.SECONDS,
-    //       minValue: 5,
-    //       maxValue: 15 * 3600,
-    //       validValues: [
-    //         5, 10, 20, 30,
-    //         1 * 60, 2 * 60, 3 * 60, 5 * 60, 10 * 60, 20 * 60, 30 * 60,
-    //         1 * 3600, 2 * 3600, 3 * 3600, 5 * 3600, 10 * 3600, 12 * 3600, 15 * 3600,
-    //       ],
-    //       perms: [platform.Characteristic.Perms.READ, platform.Characteristic.Perms.NOTIFY, platform.Characteristic.Perms.WRITE],
-    //     });
-    //     this.value = this.getDefaultValue();
-    //   }
-    // }
-
     class EveMotionLastActivation extends platform.Characteristic {
       public static readonly UUID: string = 'E863F11A-079E-48FF-8F27-9C2605A29F52';
 
       constructor() {
         super('Last Activation', EveMotionLastActivation.UUID, {
-          format: platform.Characteristic.Formats.UINT32,
-          unit: platform.Characteristic.Units.SECONDS,
-          perms: [platform.Characteristic.Perms.READ, platform.Characteristic.Perms.NOTIFY],
+          format: platform.api.hap.Formats.UINT32,
+          unit: platform.api.hap.Units.SECONDS,
+          perms: [platform.api.hap.Perms.PAIRED_READ, platform.api.hap.Perms.NOTIFY],
         });
         this.value = this.getDefaultValue();
       }
@@ -120,7 +77,7 @@ export class MotionAccessory implements AccessoryPlugin {
       autoread: true,
     }, platform.connection);
 
-    dp.on('change', (oldValue: number, newValue: number) => {
+    dp.on('change', (_oldValue: number, newValue: number) => {
       this.motionSensorService.getCharacteristic(platform.Characteristic.MotionDetected).updateValue(newValue);
       this.loggingService._addEntry({ time: Math.round(new Date().valueOf() / 1000), status: newValue });
     });
