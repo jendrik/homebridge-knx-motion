@@ -1,6 +1,9 @@
 # Ignore source code
 src
 
+# Ignore internal planning artifacts
+docs/superpowers/
+
 # ------------- Defaults ------------- #
 
 # gitHub actions
