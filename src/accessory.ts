@@ -15,6 +15,10 @@ function normalizeMotionValue(value: unknown): boolean {
   return value === true || value === 1 || value === '1';
 }
 
+function isValidElapsedSeconds(value: number): boolean {
+  return Number.isFinite(value) && value >= 0;
+}
+
 function getHistoryEntries(loggingService: fakegato): FakegatoHistoryEntry[] {
   if (!Array.isArray(loggingService.history)) {
     return [];
@@ -26,7 +30,9 @@ function getHistoryEntries(loggingService: fakegato): FakegatoHistoryEntry[] {
     }
 
     const candidate = entry as Partial<FakegatoHistoryEntry>;
-    return typeof candidate.time === 'number' && typeof candidate.status === 'boolean';
+    return typeof candidate.time === 'number'
+      && isValidElapsedSeconds(candidate.time)
+      && typeof candidate.status === 'boolean';
   });
 }
 
@@ -81,7 +87,8 @@ export class MotionAccessory implements AccessoryPlugin {
       }
 
       if (this.motionSensorService.getCharacteristic(platform.Characteristic.MotionDetected).value) {
-        return Math.round(Date.now() / 1000) - initialTime;
+        const currentActivation = Math.round(Date.now() / 1000) - initialTime;
+        return isValidElapsedSeconds(currentActivation) ? currentActivation : 0;
       }
 
       const history = getHistoryEntries(this.loggingService);
@@ -98,7 +105,8 @@ export class MotionAccessory implements AccessoryPlugin {
         }
       }
 
-      return lastActivation - initialTime;
+      const lastActivationElapsed = lastActivation - initialTime;
+      return isValidElapsedSeconds(lastActivationElapsed) ? lastActivationElapsed : 0;
     });
 
     this.loggingService = new platform.fakeGatoHistoryService('motion', this, { storage: 'fs', log: platform.log });
