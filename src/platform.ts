@@ -18,7 +18,11 @@ function normalizePort(value: unknown, log: Logging): number {
     return DEFAULT_KNX_PORT;
   }
 
-  const port = typeof value === 'number' ? value : Number(value);
+  const port = typeof value === 'number'
+    ? value
+    : typeof value === 'string' && /^\d+$/.test(value.trim())
+      ? Number(value.trim())
+      : Number.NaN;
   if (Number.isInteger(port) && port > 0 && port <= 65535) {
     return port;
   }
