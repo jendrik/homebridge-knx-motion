@@ -2,8 +2,8 @@
 
 [![npm](https://img.shields.io/npm/v/@jendrik/homebridge-knx-motion)](https://www.npmjs.com/package/@jendrik/homebridge-knx-motion)
 [![license](https://img.shields.io/npm/l/@jendrik/homebridge-knx-motion)](LICENSE)
-[![homebridge](https://img.shields.io/badge/homebridge-%5E1.8.0%20%7C%7C%20%5E2.0.0-purple)](https://github.com/homebridge/homebridge)
-[![node](https://img.shields.io/badge/node-%5E18.20%20%7C%7C%20%5E20.15%20%7C%7C%20%5E22-green)](https://nodejs.org)
+[![homebridge](https://img.shields.io/badge/homebridge-%5E2.0.2-purple)](https://github.com/homebridge/homebridge)
+[![node](https://img.shields.io/badge/node-%5E22%20%7C%7C%20%5E24-green)](https://nodejs.org)
 
 A [Homebridge](https://homebridge.io) plugin that exposes KNX motion sensors to Apple HomeKit.
 
@@ -14,9 +14,11 @@ A [Homebridge](https://homebridge.io) plugin that exposes KNX motion sensors to 
 - Listens to KNX group addresses in real time (DPT 1.001)
 - Eve app history support via [fakegato-history](https://github.com/simont77/fakegato-history)
 - Custom "Last Activation" characteristic for Eve
-- Compatible with Homebridge v1.8+ and v2.0+
+- Compatible with Homebridge v2 and Node.js 22/24
 
 ## Installation
+
+This version requires Homebridge 2 and Node.js 22 or 24.
 
 ### Via Homebridge UI (recommended)
 
