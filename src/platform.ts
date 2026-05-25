@@ -1,9 +1,72 @@
-import type { API, StaticPlatformPlugin, Logging, PlatformConfig, AccessoryPlugin, Service, Characteristic, uuid } from 'homebridge';
+import type { API, StaticPlatformPlugin, Logging, PlatformConfig, AccessoryPlugin, Service, Characteristic, uuid, AccessoryConfig } from 'homebridge';
 
 import fakegato from 'fakegato-history';
 import { Connection } from 'knx';
 
 import { MotionAccessory } from './accessory.js';
+
+const DEFAULT_KNX_IP = '224.0.23.12';
+const DEFAULT_KNX_PORT = 3671;
+
+interface MotionDeviceConfig extends AccessoryConfig {
+  name: string;
+  listen: string;
+}
+
+function normalizePort(value: unknown, log: Logging): number {
+  if (value === undefined || value === null || value === '') {
+    return DEFAULT_KNX_PORT;
+  }
+
+  const port = typeof value === 'number'
+    ? value
+    : typeof value === 'string' && /^\d+$/.test(value.trim())
+      ? Number(value.trim())
+      : Number.NaN;
+  if (Number.isInteger(port) && port > 0 && port <= 65535) {
+    return port;
+  }
+
+  log.error(`Invalid KNX port "${String(value)}"; using default ${DEFAULT_KNX_PORT}`);
+  return DEFAULT_KNX_PORT;
+}
+
+function normalizeIp(value: unknown): string {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : DEFAULT_KNX_IP;
+}
+
+function isValidDeviceConfig(value: unknown): value is MotionDeviceConfig {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const device = value as Partial<MotionDeviceConfig>;
+  return typeof device.name === 'string' && device.name.trim().length > 0
+    && typeof device.listen === 'string' && device.listen.trim().length > 0;
+}
+
+function loadDevices(config: PlatformConfig, log: Logging): MotionDeviceConfig[] {
+  if (!Array.isArray(config.devices)) {
+    log.error('No valid KNX motion devices configured. Expected "devices" to be an array.');
+    return [];
+  }
+
+  const devices: MotionDeviceConfig[] = [];
+  config.devices.forEach((device: unknown, index: number) => {
+    if (!isValidDeviceConfig(device)) {
+      log.error(`Skipping invalid KNX motion device at index ${index}. Each device requires non-empty "name" and "listen" fields.`);
+      return;
+    }
+
+    devices.push({
+      ...device,
+      name: device.name.trim(),
+      listen: device.listen.trim(),
+    });
+  });
+
+  return devices;
+}
 
 export class MotionPlatform implements StaticPlatformPlugin {
   public readonly Service: typeof Service;
@@ -27,25 +90,24 @@ export class MotionPlatform implements StaticPlatformPlugin {
 
     this.fakeGatoHistoryService = fakegato(this.api);
 
-    // connect
+    const ipAddr = normalizeIp(config.ip);
+    const ipPort = normalizePort(config.port, log);
+
     this.connection = new Connection({
-      ipAddr: config.ip ?? '224.0.23.12',
-      ipPort: config.port ?? 3671,
+      ipAddr,
+      ipPort,
       handlers: {
         connected: () => {
-          log.info('KNX connected');
+          log.info(`KNX connected to ${ipAddr}:${ipPort}`);
         },
         error: (connstatus: unknown) => {
-          log.error(`KNX status: ${connstatus}`);
+          log.error(`KNX connection error for ${ipAddr}:${ipPort}: ${String(connstatus)}`);
         },
       },
     });
 
-    // read devices
-    config.devices.forEach(element => {
-      if (element.name !== undefined && element.listen) {
-        this.devices.push(new MotionAccessory(this, element));
-      }
+    loadDevices(config, log).forEach(device => {
+      this.devices.push(new MotionAccessory(this, device));
     });
   }
 
