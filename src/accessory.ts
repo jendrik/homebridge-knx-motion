@@ -6,6 +6,30 @@ import fakegato from 'fakegato-history';
 import { PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_DISPLAY_NAME } from './settings.js';
 import type { MotionPlatform } from './platform.js';
 
+type FakegatoHistoryEntry = {
+  time: number;
+  status: boolean;
+};
+
+function normalizeMotionValue(value: unknown): boolean {
+  return value === true || value === 1 || value === '1';
+}
+
+function getHistoryEntries(loggingService: fakegato): FakegatoHistoryEntry[] {
+  if (!Array.isArray(loggingService.history)) {
+    return [];
+  }
+
+  return loggingService.history.filter((entry: unknown): entry is FakegatoHistoryEntry => {
+    if (typeof entry !== 'object' || entry === null) {
+      return false;
+    }
+
+    const candidate = entry as Partial<FakegatoHistoryEntry>;
+    return typeof candidate.time === 'number' && typeof candidate.status === 'boolean';
+  });
+}
+
 export class MotionAccessory implements AccessoryPlugin {
   private readonly uuid_base: string;
   private readonly name: string;
@@ -33,8 +57,8 @@ export class MotionAccessory implements AccessoryPlugin {
       }
     }
 
-    this.name = config.name;
-    this.listen = config.listen;
+    this.name = String(config.name);
+    this.listen = String(config.listen);
     this.uuid_base = platform.uuid.generate(PLUGIN_NAME + '-' + this.name + '-' + this.listen);
     this.displayName = this.uuid_base;
 
@@ -49,24 +73,32 @@ export class MotionAccessory implements AccessoryPlugin {
     this.motionSensorService = new platform.Service.MotionSensor(this.name);
     this.motionSensorService.getCharacteristic(platform.Characteristic.StatusActive).updateValue(true);
 
-    // last activation
     this.motionSensorService.addCharacteristic(EveMotionLastActivation);
     this.motionSensorService.getCharacteristic(EveMotionLastActivation).onGet(async () => {
-      if (this.loggingService.getInitialTime() === undefined) {
+      const initialTime = this.loggingService.getInitialTime();
+      if (initialTime === undefined) {
         return 0;
-      } else if (this.motionSensorService.getCharacteristic(platform.Characteristic.MotionDetected).value) {
-        return Math.round(new Date().valueOf() / 1000) - this.loggingService.getInitialTime();
-      } else {
-        let lastActivation = this.loggingService.history[this.loggingService.history.length - 1].time;
-        for (let i = this.loggingService.history.length - 1; i >= 0; --i) {
-          if (this.loggingService.history[i].status === false) {
-            lastActivation = this.loggingService.history[i].time;
-          } else {
-            break;
-          }
-        }
-        return lastActivation - this.loggingService.getInitialTime();
       }
+
+      if (this.motionSensorService.getCharacteristic(platform.Characteristic.MotionDetected).value) {
+        return Math.round(Date.now() / 1000) - initialTime;
+      }
+
+      const history = getHistoryEntries(this.loggingService);
+      if (history.length === 0) {
+        return 0;
+      }
+
+      let lastActivation = history[history.length - 1].time;
+      for (let i = history.length - 1; i >= 0; --i) {
+        if (!history[i].status) {
+          lastActivation = history[i].time;
+        } else {
+          break;
+        }
+      }
+
+      return lastActivation - initialTime;
     });
 
     this.loggingService = new platform.fakeGatoHistoryService('motion', this, { storage: 'fs', log: platform.log });
@@ -77,9 +109,11 @@ export class MotionAccessory implements AccessoryPlugin {
       autoread: true,
     }, platform.connection);
 
-    dp.on('change', (_oldValue: number, newValue: number) => {
-      this.motionSensorService.getCharacteristic(platform.Characteristic.MotionDetected).updateValue(newValue);
-      this.loggingService._addEntry({ time: Math.round(new Date().valueOf() / 1000), status: newValue });
+    dp.on('change', (_oldValue: unknown, newValue: unknown) => {
+      const motionDetected = normalizeMotionValue(newValue);
+      this.motionSensorService.getCharacteristic(platform.Characteristic.MotionDetected).updateValue(motionDetected);
+      this.loggingService._addEntry({ time: Math.round(Date.now() / 1000), status: motionDetected });
+      platform.log.debug(`KNX motion update for ${this.name} (${this.listen}): ${motionDetected}`);
     });
   }
 
