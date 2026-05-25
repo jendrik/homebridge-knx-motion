@@ -13,8 +13,8 @@
     "url": "https://github.com/jendrik/homebridge-knx-motion/issues"
   },
   "engines": {
-    "node": "^18.20.4 || ^20.15.1 || ^22",
-    "homebridge": "^1.8.0 || ^2.0.0-beta.0"
+    "node": "^22 || ^24",
+    "homebridge": "^2.0.2"
   },
   "main": "dist/index.js",
   "scripts": {
@@ -31,15 +31,15 @@
     "@eslint/js": "^9.39.1",
     "@types/node": "^22.15.0",
     "eslint": "^9.39.1",
-    "homebridge": "^2.0.0-beta.55",
+    "homebridge": "^2.0.2",
     "nodemon": "^3.1.11",
     "rimraf": "^6.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.46.4"
+    "typescript-eslint": "^8.59.4"
   },
   "dependencies": {
-    "fakegato-history": "^0.6.4",
-    "knx": "^2.5.2"
+    "fakegato-history": "^0.6.7",
+    "knx": "^2.5.4"
   }
 }
