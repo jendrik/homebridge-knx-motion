@@ -19,20 +19,35 @@ function isValidElapsedSeconds(value: number): boolean {
   return Number.isFinite(value) && value >= 0;
 }
 
+function normalizeHistoryStatus(value: unknown): boolean | undefined {
+  if (value === true || value === 1) {
+    return true;
+  }
+
+  if (value === false || value === 0) {
+    return false;
+  }
+
+  return undefined;
+}
+
 function getHistoryEntries(loggingService: fakegato): FakegatoHistoryEntry[] {
   if (!Array.isArray(loggingService.history)) {
     return [];
   }
 
-  return loggingService.history.filter((entry: unknown): entry is FakegatoHistoryEntry => {
+  return loggingService.history.flatMap((entry: unknown): FakegatoHistoryEntry[] => {
     if (typeof entry !== 'object' || entry === null) {
-      return false;
+      return [];
     }
 
     const candidate = entry as Partial<FakegatoHistoryEntry>;
-    return typeof candidate.time === 'number'
-      && isValidElapsedSeconds(candidate.time)
-      && typeof candidate.status === 'boolean';
+    const status = normalizeHistoryStatus(candidate.status);
+    if (typeof candidate.time !== 'number' || !isValidElapsedSeconds(candidate.time) || status === undefined) {
+      return [];
+    }
+
+    return [{ time: candidate.time, status }];
   });
 }
 
